@@ -2,6 +2,13 @@
 
 par Aurélie RAOUL
 
+# 0. Ressources
+
+https://realpython.com/face-recognition-with-python/
+https://realpython.com/face-detection-in-python-using-a-webcam/
+https://www.youtube.com/watch?v=qOXDoYUgNlU
+https://github.com/shashank3199/VisioNxN-Sudoku/blob/master/main.py
+
 # 1. Description du programme
 
 ## 1.1. Structure du projet
