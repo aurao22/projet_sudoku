@@ -14,7 +14,7 @@ if 'projet_sudoku' not in EXECUTION_PATH:
     EXECUTION_PATH = join(EXECUTION_PATH, "projet_sudoku")
 print(f"[sudoku_util] execution path= {EXECUTION_PATH}")
 
-SUDOKU_IMG_PATH = [join(EXECUTION_PATH, "dataset", "sudoku-00"+str(i)+".png") for i in range(1, 9)]        
+SUDOKU_IMG_PATH = list({join(EXECUTION_PATH, "dataset", "sudoku-00"+str(i)+".png") for i in range(1, 10)} | {join(EXECUTION_PATH, "dataset", "sudoku-0"+str(i)+".png") for i in range(10, 20)} )
 
 SUDOKUS = { 
             "sudoku-001.png" :[ [5,3,0,0,7,0,0,0,0],

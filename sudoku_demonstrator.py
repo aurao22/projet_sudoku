@@ -109,17 +109,20 @@ def resolve_sudoku(img_path, verbose=1):
 
     extractor = SudokuExtractor(verbose=verbose-1)
     grille = extractor.sudoku_matrice(pathImage=img_path)
+    if verbose>0:
+        print(f"[{short_name}]\tINFO : extraction {file_name} in : {datetime.now()-now}")
+
     if grille is not None:
+        step2 = datetime.now() # current date and time
         bo = deepcopy(grille)
         solve(bo)
         print_sudoku_and_result(grille, bo)
     if verbose>0:
-        print(f"[{short_name}]\tINFO : resolve {file_name} in : {datetime.now()-now}")
+        print(f"[{short_name}]\tINFO : solve {file_name} in : {datetime.now()-step2}")
+        print(f"[{short_name}]\tINFO : complete {file_name} in : {datetime.now()-now}")
     return grille, bo
     
     
-    
-
 
 # ----------------------------------------------------------------------------------
 #                        MAIN
@@ -129,6 +132,7 @@ if __name__ == '__main__':
     short_name = "sudoku_extractor"
     verbose = 1
     for img_path in SUDOKU_IMG_PATH:
+        print(f"[{short_name}]\tINFO : {img_path}")
         grille_src, board = resolve_sudoku(img_path=img_path, verbose=verbose)
         if grille_src is not None and board is not None:
             display_result(pathImage=img_path, grille_src=grille_src, board=board, verbose=verbose)
