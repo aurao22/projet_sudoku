@@ -19,6 +19,18 @@ from datetime import datetime
 from copy import deepcopy
 import numpy as np
 from tqdm import tqdm
+import sys
+from os import getcwd
+from os.path import join
+execution_path = getcwd()
+
+if 'PROJETS' not in execution_path:
+    execution_path = join(execution_path, "PROJETS")
+if 'projet_sudoku' not in execution_path:
+    execution_path = join(execution_path, "projet_sudoku")
+
+print(f"[sudoku_extractor] execution path= {execution_path}")
+sys.path.append(execution_path)
 from sudoku_util import print_sudoku, SUDOKUS, SUDOKUS_ANSWER
 
 def solve(bo):
@@ -67,19 +79,20 @@ def find_empty(bo):
 # ----------------------------------------------------------------------------------
 #  %%                      TEST
 # ----------------------------------------------------------------------------------
-
 def _test_sudoku_solver(verbose=1):
     short_name = "Test_suduko_solver_recurcif"
     execution_time = []
-    
-    for key, grille in tqdm(SUDOKUS.items(), desc=short_name):
-        now = datetime.now() # current date and time
-        bo = deepcopy(grille)
-        if verbose>0:
-            print_sudoku(bo)
-        solve(bo)
-        execution_time.append(datetime.now()-now)
-        assert bo == SUDOKUS_ANSWER.get(key, []) or bo == SUDOKUS_ANSWER.get(key+"b", [])
+
+    for key, expected in tqdm(SUDOKUS_ANSWER.items(), desc=short_name):
+        grille = SUDOKUS.get(key, None)
+        if grille is not None:
+            now = datetime.now() # current date and time
+            bo = deepcopy(grille)
+            if verbose>0:
+                print_sudoku(bo)
+            solve(bo)
+            execution_time.append(datetime.now()-now)
+            assert bo == expected
     # 0:00:00.009179 => 2 sudokus
     print(np.mean(execution_time))
 

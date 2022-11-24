@@ -4,15 +4,17 @@
 # ----------------------------------------------------------------------------------
 from os import getcwd
 from os.path import join
-execution_path = getcwd()
+EXECUTION_PATH = getcwd()
 
-if 'PROJETS' not in execution_path:
-    execution_path = join(execution_path, "PROJETS")
-if 'projet_sudoku' not in execution_path:
-    execution_path = join(execution_path, "projet_sudoku")
-print(f"[sudoku_util] execution path= {execution_path}")
+if 'projet_sudoku' in EXECUTION_PATH:
+    EXECUTION_PATH = EXECUTION_PATH.split('projet_sudoku')[0]
+if 'PROJETS' not in EXECUTION_PATH:
+    EXECUTION_PATH = join(EXECUTION_PATH, "PROJETS")
+if 'projet_sudoku' not in EXECUTION_PATH:
+    EXECUTION_PATH = join(EXECUTION_PATH, "projet_sudoku")
+print(f"[sudoku_util] execution path= {EXECUTION_PATH}")
 
-SUDOKU_IMG_PATH = [join(execution_path, "datase", "sudoku-00"+str(i)+".png") for i in range(1, 9)]        
+SUDOKU_IMG_PATH = [join(EXECUTION_PATH, "dataset", "sudoku-00"+str(i)+".png") for i in range(1, 9)]        
 
 SUDOKUS = { 
             "sudoku-001.png" :[ [5,3,0,0,7,0,0,0,0],
@@ -167,6 +169,68 @@ SUDOKUS_ANSWER = {
 # ----------------------------------------------------------------------------------
 #  %%                      FUNCTION
 # ----------------------------------------------------------------------------------
+from pathlib import Path
+def create_dir(dest_path, verbose=0):
+    """
+    Create dir
+
+    Args:
+        dest_path (str): destination path (directory)
+        verbose (int, optional): log level. Defaults to 0.
+    """
+    # Création du répertoire s'il n'existe pas
+    if dest_path is None or len(dest_path.strip()) > 0:   
+        base = Path(dest_path)
+        base.mkdir(exist_ok=True)
+        
+    return dest_path
+
+from os.path import join, exists, isfile
+from os import remove, rename
+import shutil
+
+def remove_file_if_exist(file_path, backup_file=False, verbose=0):
+    """
+    Remove file
+
+    Args:
+        file_path (str): the file path (inlude file name)
+        backup_file (bool, optional): if True save the previous file with .backup. Defaults to False.
+        verbose (int, optional): Log level. Defaults to 0.
+    """
+    if (exists(file_path)):
+        if isfile(file_path):
+            if backup_file:
+                if (exists(str(file_path)+".backup")):
+                    remove(str(file_path)+".backup")
+                rename(str(file_path), str(file_path)+".backup")
+            else:
+                try:
+                    remove(file_path)
+                except Exception as error:
+                    shutil.rmtree(file_path)
+        else:
+            shutil.rmtree(file_path)
+
+from glob import glob
+def list_dir_files(dir_path, endwith=None, verbose=0):
+    end = "*"
+    if endwith is not None:
+        end = endwith.replace(".", "")
+
+    files = glob(f"{dir_path}/*.{end}")
+    return files
+
+def list_dir_dir(dir_path, verbose=0):
+    li_dir = []
+    files = glob.glob(f"{dir_path}")
+    for f in files:
+        if not isfile(f):
+            li_dir.append(f)
+
+    return li_dir
+
+
 def print_sudoku(grille):
     """ display the grid like :
     -------------------------------------

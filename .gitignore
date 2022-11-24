@@ -127,7 +127,14 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+*/dataset/*/*.*
 dataset/*.csv
+dataset/*.tgz
 dataset/*.csv2
 dataset/*.bak
 *.bak
+dataset/digit_split.ipynb
+dataset/digits/0/0_font-agency-fb-1-w.png
+model/logs/*
+model/aurao/*
+_*
