@@ -95,9 +95,11 @@ def convert_prediction_to_class(one_picture_prediction, verbose=0):
     return np.argmax(np.round(one_picture_prediction, 2))
 
 #### 6 -  TO DISPLAY THE SOLUTION ON THE IMAGE
-def displayNumbers(img,numbers,color = (0,255,0), verbose=0):
+def displayNumbers(img,numbers_src,color = (0,255,0), verbose=0):
     secW = int(img.shape[1]/9)
     secH = int(img.shape[0]/9)
+    numbers = np.array(numbers_src)
+    numbers = numbers.flatten()
     for x in range (0,9):
         for y in range (0,9):
             if numbers[(y*9)+x] != 0 :
