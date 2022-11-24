@@ -127,8 +127,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-*/dataset/*/*.*
+*/dataset/digits/*.*
 dataset/*.csv
+dataset/digits/*
+dataset/letters/*
+dataset/sudoku_box/*
+dataset/to_split/*
 dataset/*.tgz
 dataset/*.csv2
 dataset/*.bak

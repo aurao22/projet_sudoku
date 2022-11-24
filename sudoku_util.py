@@ -264,6 +264,47 @@ def print_sudoku(grille):
     else:
         print("Nothing to display")
 
+
+def print_sudoku_and_result(grille, grille_result):
+    """ display the grid like :
+    -------------------------------------
+    | 2 :   : 9 |   :   :   | 6 :   :   |
+    |   : 4 :   | 8 : 7 :   |   : 1 : 2 |
+    | 8 :   :   |   : 1 : 9 |   : 4 :   |
+    -------------------------------------
+    |   : 3 :   | 7 :   :   | 8 :   : 1 |
+    |   : 6 : 5 |   :   : 8 |   : 3 :   |
+    | 1 :   :   |   : 3 :   |   :   : 7 |
+    -------------------------------------
+    |   :   :   | 6 : 5 :   | 7 :   : 9 |
+    | 6 :   : 4 |   :   :   |   : 2 :   |
+    |   : 8 :   | 3 :   : 1 | 4 : 5 :   |
+    -------------------------------------
+
+    Args:
+        grille (list(list), optional): _description_. Defaults to None.
+    """
+    if grille is not None:
+        print("-------------------------------------\t-------------------------------------")
+        for i in range(9):
+            print(f"|", end="")
+            for j in range(9):
+                val = grille[i][j] if grille[i][j] > 0 else " "
+                sep = "|" if j in [2,5,8] else ":"
+                print(f" {val} {sep}", end="")
+            print('\t|', end="")
+            for j in range(9):
+                val = grille_result[i][j] if grille_result[i][j] > 0 else " "
+                sep = "|" if j in [2,5,8] else ":"
+                print(f" {val} {sep}", end="")
+            grille_result
+            print("")
+            if i in [2,5,8]:
+                print("-------------------------------------\t-------------------------------------")
+    else:
+        print("Nothing to display")
+
+
 # ----------------------------------------------------------------------------------
 #                        MAIN
 # ----------------------------------------------------------------------------------
@@ -271,3 +312,5 @@ def print_sudoku(grille):
 if __name__ == '__main__':
     short_name = "sudoku_util"
     print_sudoku(SUDOKUS.get("sudoku-008.png", []))
+
+    print_sudoku_and_result(SUDOKUS.get("sudoku-008.png", []), SUDOKUS.get("sudoku-008.png", []))
