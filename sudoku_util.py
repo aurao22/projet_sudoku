@@ -2,8 +2,13 @@
 # ----------------------------------------------------------------------------------
 #  %%                      CONSTANTS
 # ----------------------------------------------------------------------------------
+from collections import Counter, defaultdict
 from os import getcwd
 from os.path import join
+import numpy as np 
+import cv2 
+from matplotlib import pyplot as plt
+
 EXECUTION_PATH = getcwd()
 
 if 'projet_sudoku' in EXECUTION_PATH:
@@ -14,7 +19,10 @@ if 'projet_sudoku' not in EXECUTION_PATH:
     EXECUTION_PATH = join(EXECUTION_PATH, "projet_sudoku")
 print(f"[sudoku_util] execution path= {EXECUTION_PATH}")
 
-SUDOKU_IMG_PATH = list({join(EXECUTION_PATH, "dataset", "sudoku-00"+str(i)+".png") for i in range(1, 10)} | {join(EXECUTION_PATH, "dataset", "sudoku-0"+str(i)+".png") for i in range(10, 20)} )
+
+PATH_SUDOKU_DIR = join(EXECUTION_PATH, "dataset", "sudoku")
+
+# SUDOKU_IMG_PATH = list({join(EXECUTION_PATH, "dataset", "sudoku-00"+str(i)+".png") for i in range(1, 9)} | {join(EXECUTION_PATH, "dataset", "sudoku-0"+str(i)+".png") for i in range(10, 20)} )
 
 SUDOKUS = { 
             "sudoku-001.png" :[ [5,3,0,0,7,0,0,0,0],
@@ -167,7 +175,7 @@ SUDOKUS_ANSWER = {
             #             [5, 7, 9, 8, 1, 6, 2, 4, 3]],
     }
 # ----------------------------------------------------------------------------------
-#  %%                      FUNCTION
+#  %%                      FILES
 # ----------------------------------------------------------------------------------
 from pathlib import Path
 def create_dir(dest_path, verbose=0):
@@ -229,8 +237,88 @@ def list_dir_dir(dir_path, verbose=0):
             li_dir.append(f)
 
     return li_dir
+# ----------------------------------------------------------------------------------
+#  %%                      IMAGES
+# ----------------------------------------------------------------------------------
+import cv2
+from copy import deepcopy
+def preProcess(img_path, size = None, less_limit=200,verbose=0):
+    res = None
+    t_img = cv2.imread(img_path,0) 
+    # imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # CONVERT IMAGE TO GRAY SCALE
+    noiseless_image_bw = cv2.fastNlMeansDenoising(t_img, None, 20, 7, 21) 
+    imgBlur = cv2.GaussianBlur(noiseless_image_bw, (5, 5), 1)  # ADD GAUSSIAN BLUR
+
+    # imgReduc = deepcopy(imgBlur)
+    # if less_limit is not None:
+    #     for i in range(0, len(imgBlur)):
+    #         for j in range(0, len(imgBlur[i])):
+    #             if imgBlur[i][j] < less_limit:
+    #                 imgReduc[i][j] = 0
+    #             else:
+    #                 imgReduc[i][j] = 255
+    
+    imgThreshold = cv2.adaptiveThreshold(imgBlur, 255, 1, 1, 11, 2)  # APPLY ADAPTIVE THRESHOLD
+    res = imgThreshold
+    # imgThresholdReduce = None
+    # if less_limit is not None:
+    #     imgThresholdReduce = cv2.adaptiveThreshold(imgReduc, 255, 1, 1, 11, 2)  # APPLY ADAPTIVE THRESHOLD
+    #     res = imgThresholdReduce
+    
+    if size is not None:
+        res = cv2.resize(res, size) 
+    
+    if verbose>0:
+        images = {
+            'Orignial B&W':t_img,
+            'noiseless' : noiseless_image_bw,
+            'GaussianBlur' : imgBlur, 
+            'adaptiveThreshold' : imgThreshold,
+            }
+        # if len(imgReduc)>0:
+        #     images["imgReduc"] = imgReduc
+        #     images["imgThresholdReduce"] = imgThresholdReduce
+        displayImages(images=images)
+    return res
 
 
+def displayImages(images):
+    
+    plt.figure(figsize=(13,3))
+    i = 0
+    for title, img in images.items():
+        plt.subplot(1,len(images),i+1)
+        plt.imshow(cv2.cvtColor(img,cv2.COLOR_BGR2RGB))
+        plt.title(title)
+        plt.xticks([])
+        plt.yticks([])
+        i += 1
+    plt.tight_layout()
+    plt.show()
+
+def draw_digits(X, y=None, nb=None):
+    
+    # plot some of the numbers
+    if nb is None:
+        nb = len(X)
+
+    nb_cols = 10
+    nb_lignes = (nb//nb_cols)
+
+    plt.figure(figsize=(14,(nb_lignes*1.5)))
+    for digit_num in range(0,nb):
+        plt.subplot(nb_lignes,nb_cols,digit_num+1)
+        grid_data = X[digit_num].reshape(28,28)  # reshape from 1d to 2d pixel array
+        plt.imshow(grid_data, interpolation = "none", cmap = "afmhot")
+        if y is not None:
+            plt.title(y[digit_num])
+        plt.axis("off")
+    plt.tight_layout()
+    plt.show()
+
+# ----------------------------------------------------------------------------------
+#  %%                      SUDOKU
+# ----------------------------------------------------------------------------------
 def print_sudoku(grille):
     """ display the grid like :
     -------------------------------------
@@ -304,6 +392,55 @@ def print_sudoku_and_result(grille, grille_result):
     else:
         print("Nothing to display")
 
+def get_sudoku_img_path(verbose=0):
+    res = []
+    sudoku_files = list_dir_files(dir_path=PATH_SUDOKU_DIR, endwith=".png", verbose=verbose)
+    for f in sudoku_files:
+        if "answer" not in f:
+            res.append(f)
+    return res
+
+def most_number_by_idx(numbers_by_key, verbose=0):
+    short_name = "converge_most_number_by_idx"
+    # Comparaison des mdoèles
+    numbers = []
+    diff_boxes_idx = []
+    diff_model = []
+    keys = list(numbers_by_key.keys())
+    first = numbers_by_key.get(keys[0], [])
+    
+    numbers_by_idx = defaultdict(list)
+
+    for n in range(len(first)):
+        for k in keys:
+            numbers_by_idx[n].append(numbers_by_key.get(k, [])[n])
+        count_val_for_idx = Counter(numbers_by_idx[n])
+        maxi = count_val_for_idx.most_common()[0]
+        if maxi[1] == len(keys):
+            numbers.append(maxi[0])
+        elif maxi[1] > 1 and maxi[1]>count_val_for_idx.most_common()[1][1]:
+            numbers.append(maxi[0])
+        else:
+            numbers.append(0)
+            diff_model.append(count_val_for_idx.most_common())
+            diff_boxes_idx.append(n)
+   
+    return numbers, diff_boxes_idx, diff_model
+
+# ----------------------------------------------------------------------------------
+#                        TEST
+# ----------------------------------------------------------------------------------
+def _test_most_number_by_idx(verbose=1):
+    numbers_by_key = {
+        "model1" : [0,1,2,3,4,5,6,7,8,9],
+        "model2" : [0,1,3,3,4,5,8,7,8,9],
+        "model3" : [1,1,2,3,4,5,9,7,8,9],
+    }
+
+    expected = [0,1,2,3,4,5,0,7,8,9]
+
+    numbers, diff_boxes_idx = most_number_by_idx(numbers_by_key=numbers_by_key, verbose=verbose)
+    assert numbers == expected
 
 # ----------------------------------------------------------------------------------
 #                        MAIN
@@ -311,6 +448,9 @@ def print_sudoku_and_result(grille, grille_result):
 # %% main
 if __name__ == '__main__':
     short_name = "sudoku_util"
+
+    _test_most_number_by_idx()
+
     print_sudoku(SUDOKUS.get("sudoku-008.png", []))
 
     print_sudoku_and_result(SUDOKUS.get("sudoku-008.png", []), SUDOKUS.get("sudoku-008.png", []))
