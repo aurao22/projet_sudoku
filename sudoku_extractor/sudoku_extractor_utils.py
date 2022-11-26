@@ -4,30 +4,23 @@ from keras.models import load_model
 import sys
 from os import getcwd
 from os.path import join
-execution_path = getcwd()
+exe_path = getcwd()
 
-if 'PROJETS' not in execution_path:
-    execution_path = join(execution_path, "PROJETS")
-if 'projet_sudoku' not in execution_path:
-    execution_path = join(execution_path, "projet_sudoku")
+if 'projet_sudoku' in exe_path:
+    exe_path = exe_path.split('projet_sudoku')[0]
+if 'PROJETS' not in exe_path:
+    exe_path = join(exe_path, "PROJETS")
+if 'projet_sudoku' not in exe_path:
+    exe_path = join(exe_path, "projet_sudoku")
+sys.path.append(exe_path)
+print(f"[sudoku_extractor] execution path= {exe_path}")
 
-print(f"[sudoku_extractor] execution path= {execution_path}")
-sys.path.append(execution_path)
-
-MODEL_PATH = join(execution_path,"sudoku_extractor", "myModel.h5")
+MODEL_PATH = join(exe_path,"sudoku_extractor", "myModel.h5")
 
 #### READ THE MODEL WEIGHTS
 def intializePredectionModel(model_path=MODEL_PATH, verbose=0):
     model = load_model(model_path)
     return model
-
-
-#### 1 - Preprocessing Image
-def preProcess(img, verbose=0):
-    imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # CONVERT IMAGE TO GRAY SCALE
-    imgBlur = cv2.GaussianBlur(imgGray, (5, 5), 1)  # ADD GAUSSIAN BLUR
-    imgThreshold = cv2.adaptiveThreshold(imgBlur, 255, 1, 1, 11, 2)  # APPLY ADAPTIVE THRESHOLD
-    return imgThreshold
 
 
 #### 3 - Reorder points for Warp Perspective

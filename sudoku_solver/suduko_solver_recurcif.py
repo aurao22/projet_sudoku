@@ -22,15 +22,17 @@ from tqdm import tqdm
 import sys
 from os import getcwd
 from os.path import join
-execution_path = getcwd()
+exe_path = getcwd()
 
-if 'PROJETS' not in execution_path:
-    execution_path = join(execution_path, "PROJETS")
-if 'projet_sudoku' not in execution_path:
-    execution_path = join(execution_path, "projet_sudoku")
+if 'projet_sudoku' in exe_path:
+    exe_path = exe_path.split('projet_sudoku')[0]
+if 'PROJETS' not in exe_path:
+    exe_path = join(exe_path, "PROJETS")
+if 'projet_sudoku' not in exe_path:
+    exe_path = join(exe_path, "projet_sudoku")
+sys.path.append(exe_path)
+print(f"[sudoku_solver_recurcif] execution path= {exe_path}")
 
-print(f"[sudoku_extractor] execution path= {execution_path}")
-sys.path.append(execution_path)
 from sudoku_util import print_sudoku, SUDOKUS, SUDOKUS_ANSWER
 
 def solve(bo):
