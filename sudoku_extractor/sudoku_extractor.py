@@ -14,14 +14,17 @@ import pytesseract
 import warnings
 warnings.filterwarnings("ignore")
 
+if 'projet_sudoku' in exe_path:
+    exe_path = exe_path.split('projet_sudoku')[0]
 if 'PROJETS' not in exe_path:
     exe_path = join(exe_path, "PROJETS")
 if 'projet_sudoku' not in exe_path:
     exe_path = join(exe_path, "projet_sudoku")
 
-print(f"[sudoku_extractor] execution path= {exe_path}")
 sys.path.append(exe_path)
-from sudoku_util import SUDOKU_IMG_PATH, SUDOKUS, print_sudoku, EXECUTION_PATH, create_dir, remove_file_if_exist
+print(f"[sudoku_extractor] execution path= {exe_path}")
+from sudoku_util import SUDOKUS, print_sudoku, EXECUTION_PATH, create_dir, remove_file_if_exist, get_sudoku_img_path, list_dir_files, most_number_by_idx, preProcess
+# from sudoku_extractor_utils import *
 from sudoku_extractor.sudoku_extractor_utils import *
 
 ########################################################################
@@ -32,11 +35,29 @@ class SudokuExtractor():
 
     heightImg = 450
     widthImg = 450
+    models_path = [
+                    r'C:\Users\User\WORK\workspace-ia\PROJETS\projet_sudoku\model\aurao-V2',
+                    r'C:\Users\User\WORK\workspace-ia\PROJETS\projet_sudoku\sudoku_extractor\myModel.h5',
+                    r'C:\Users\User\WORK\workspace-ia\PROJETS\projet_sudoku\model\aurao-V3',
+                ]
 
-    def __init__(self,heightImg = 450,widthImg = 450, verbose=0):
+    def __init__(self,heightImg = 450,widthImg = 450, models=None, verbose=0):
+        short_name = "SudokuExtractor.contructor"
         self.verbose=verbose
         self.heightImg = heightImg
         self.widthImg = widthImg
+        if models is None:
+            self.models = {}
+            for path in self.models_path:
+                mod = intializePredectionModel(model_path=path, verbose=self.verbose)
+                if mod is not None:
+                    mod_name = path.split('\\')[-1]
+                    mod_name = mod_name.split('/')[-1]
+                    self.models[mod_name] = mod
+                    if self.verbose>1:
+                        print(f"[{short_name}]\tDEBUG : model {path}     LOAD")
+        else:
+            self.models = models
 
     def blank_img():
         imgBlank = np.zeros((SudokuExtractor.heightImg, SudokuExtractor.widthImg, 3), np.uint8)  
@@ -57,8 +78,8 @@ class SudokuExtractor():
 
         if img is not None:
             img = cv2.resize(img, (self.widthImg, self.heightImg))  # RESIZE IMAGE TO MAKE IT A SQUARE IMAGE
-            imgThreshold = preProcess(img)
-
+            imgThreshold = preProcess(img_path=pathImage, size=(self.widthImg, self.heightImg), verbose=self.verbose-1)
+            
             # #### 2. FIND ALL COUNTOURS
             contours, _ = cv2.findContours(imgThreshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # FIND ALL CONTOURS
             
@@ -95,42 +116,35 @@ class SudokuExtractor():
             if self.verbose>1:
                 print(f"[{short_name}]\tDEBUG : {len(boxes)} boxes")
                 print(f"[{short_name}]\tDEBUG : model loading....", end="")
+            
+            numbers_by_models = {}
+            for model_name, model in self.models.items():
+                numbers1 = getPredection(boxes, model, verbose=self.verbose)
+                if self.verbose>1:
+                    print(f"[{short_name}]\tDEBUG : {numbers1}")
+                numbers_by_models[model_name] = numbers1           
 
-            model1 = intializePredectionModel(verbose=self.verbose)
-            if self.verbose>1:
-                print(f"    LOAD")
-            numbers1 = getPredection(boxes, model1, verbose=self.verbose)
-            if self.verbose>1:
-                print(f"[{short_name}]\tDEBUG : {numbers1}")
-
-            model2 = intializePredectionModel(model_path=r'C:\Users\User\WORK\workspace-ia\PROJETS\projet_sudoku\model\aurao', verbose=self.verbose)
-            if self.verbose>1:
-                print(f"    LOAD")
-            numbers2 = getPredection(boxes, model2, verbose=self.verbose)
-            if self.verbose>1:
-                print(f"[{short_name}]\tDEBUG : {numbers2}")
-            # Comparaison des deux
-            numbers = []
-            for n in range(len(numbers2)):
-                numbers.append(numbers2[n])
-                if numbers2[n] != numbers1[n]:
-                    diff_boxes_idx.append(n)
+            # Comparaison entre les models
+            numbers, diff_boxes_idx, diff_model = most_number_by_idx(numbers_by_models, verbose=self.verbose)
             
             # Déparatage des models via un 3ème uniquement sur les images en désaccord
             if len(diff_boxes_idx)>0:
                 if self.verbose>0:
                     print(f"[{short_name}]\tINFO : {len(diff_boxes_idx)} differences between models, trying with ocs...")
-                # TODO
                 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
                 diff_boxes_idx3 = []
                 for idx in diff_boxes_idx:
                     num = pytesseract.image_to_string(boxes[idx],config=r'--oem 3 --psm 6 outputbase digists')
                     num = num.strip()
-                    if str(numbers2[idx]) in num:
-                        numbers[idx] = numbers2[idx]
-                    elif str(numbers1[idx]) in num:
-                        numbers[idx] = numbers1[idx]
-                    else:
+                    found = False
+                    for model_name in numbers_by_models.keys():
+                        mod_num = numbers_by_models[model_name][idx]
+                        if str(mod_num) in num:
+                            numbers[idx] = mod_num
+                            found = True
+                            break
+                    
+                    if not found:
                         diff_boxes_idx3.append(idx)
                         numbers[idx] = 0
 
@@ -149,7 +163,7 @@ class SudokuExtractor():
 # ----------------------------------------------------------------------------------
 def _test_SudokuExtractor(verbose=1):
     short_name = "sudoku_extractor"
-    to_test = deepcopy(SUDOKU_IMG_PATH)
+    to_test = deepcopy(get_sudoku_img_path(verbose=verbose))
     verbose = 0
     extractor = SudokuExtractor(verbose=verbose)
     fails_files = {}
@@ -216,7 +230,12 @@ def _test_SudokuExtractor(verbose=1):
 
 def _test_boxes(verbose=1):
     short_name = "_test_boxes"
-    to_test = deepcopy(SUDOKU_IMG_PATH)
+   
+    # to_test = deepcopy(get_sudoku_img_path(verbose=verbose))
+
+    dir_path = join(EXECUTION_PATH, "dataset", "to_boxes")
+    to_test = list_dir_files(dir_path=dir_path, verbose=verbose)
+
     verbose = 0
     extractor = SudokuExtractor(verbose=verbose)
     
@@ -225,7 +244,7 @@ def _test_boxes(verbose=1):
         file_name = file_name.split('\\')[-1]
         boxes = extractor.extract_sudoku_img(pathImage=img_path)
         if boxes is not None:
-            dest_path = join(EXECUTION_PATH, 'dataset', file_name[:-4])
+            dest_path = join(dir_path, file_name[:-4])
             remove_file_if_exist(dest_path,  backup_file=False, verbose=verbose)
             create_dir(dest_path,verbose=verbose)
             i = 0
@@ -240,8 +259,8 @@ def _test_boxes(verbose=1):
 # %% main
 if __name__ == '__main__':
     short_name = "sudoku_extractor"
-    _test_SudokuExtractor()
-    # _test_boxes()
+    _test_boxes()
+    # _test_SudokuExtractor()
 
 
 
