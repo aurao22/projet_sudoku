@@ -3,20 +3,25 @@ import os
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sys
 from os.path import join
-exe_path = os.getcwd()
 from copy import deepcopy
 from tqdm import tqdm
 import numpy as np
 from datetime import datetime
 import cv2
+from os import getcwd
+exe_path = getcwd()
+
+if 'projet_sudoku' in exe_path:
+    exe_path = exe_path.split('projet_sudoku')[0]
 if 'PROJETS' not in exe_path:
     exe_path = join(exe_path, "PROJETS")
 if 'projet_sudoku' not in exe_path:
     exe_path = join(exe_path, "projet_sudoku")
+sys.path.append(exe_path)
 
 print(f"[sudoku_demonstrator] execution path= {exe_path}")
-sys.path.append(exe_path)
-from sudoku_util import SUDOKU_IMG_PATH, print_sudoku_and_result, print_sudoku
+
+from sudoku_util import print_sudoku_and_result, print_sudoku, get_sudoku_img_path, preProcess
 from sudoku_extractor.sudoku_extractor import SudokuExtractor
 from sudoku_extractor.sudoku_extractor_utils import *
 from sudoku_solver.suduko_solver_recurcif import solve
@@ -31,8 +36,8 @@ def display_result(pathImage, grille_src, board, verbose=0):
     img = cv2.imread(pathImage)
     img = cv2.resize(img, (widthImg, heightImg))  # RESIZE IMAGE TO MAKE IT A SQUARE IMAGE
     imgBlank = np.zeros((heightImg, widthImg, 3), np.uint8)  # CREATE A BLANK IMAGE FOR TESTING DEBUGING IF REQUIRED
-    imgThreshold = preProcess(img)
-
+    imgThreshold = preProcess(img_path=pathImage, size=(widthImg, heightImg), verbose=verbose-1)
+    
     # #### 2. FIND ALL COUNTOURS
     imgContours = img.copy() # COPY IMAGE FOR DISPLAY PURPOSES
     imgBigContour = img.copy() # COPY IMAGE FOR DISPLAY PURPOSES
@@ -131,7 +136,7 @@ def resolve_sudoku(img_path, verbose=1):
 if __name__ == '__main__':
     short_name = "sudoku_extractor"
     verbose = 1
-    for img_path in SUDOKU_IMG_PATH:
+    for img_path in get_sudoku_img_path(verbose=verbose):
         print(f"[{short_name}]\tINFO : {img_path}")
         grille_src, board = resolve_sudoku(img_path=img_path, verbose=verbose)
         if grille_src is not None and board is not None:
